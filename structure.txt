@@ -1,0 +1,60 @@
+class User
+id
+full_name
+email
+password
+role  student, teacher, manager, admin
+user_status free, pro
+created_at
+updated_at
+
+
+class Category
+id
+category_name
+
+
+class Course
+id
+title
+category
+description
+level  beginner, intermediate, advanced
+price
+duration_weeks
+is_active
+status    free, plus
+created_at
+updated_at
+
+
+
+class StudyGroup
+id
+name
+course_id
+teacher_id
+starts_on
+ends_on
+status  recruiting, active, completed, cancelled
+created_at
+updated_at
+
+
+class Application
+id
+student_id
+course_id
+manager_id
+comment
+status  new, in_progress, accepted, rejected, cancelled
+created_at
+updated_at
+
+
+class Enrollment
+id
+student_id
+group_id
+status  active, completed, cancelled
+created_at
