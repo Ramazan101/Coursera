@@ -1,166 +1,151 @@
-from datetime import date, datetime
-from typing import Optional
-from pydantic import BaseModel, ConfigDict, EmailStr
-
-try:
-    from .models import (
-        ApplicationStatus,
-        CourseLevel,
-        CourseStatus,
-        EnrollmentStatus,
-        StudyGroupStatus,
-        UserRole,
-        UserSubscriptionStatus,
-    )
-except (ImportError, ValueError):
-    from models import (
-        ApplicationStatus,
-        CourseLevel,
-        CourseStatus,
-        EnrollmentStatus,
-        StudyGroupStatus,
-        UserRole,
-        UserSubscriptionStatus,
-    )
+from pydantic import BaseModel, EmailStr
+from typing import Optional, Any
+from datetime import datetime, date
+from .models import (
+    RoleEnum, UserStatusEnum, CourseLevelEnum, CourseStatusEnum,
+    StudyGroupStatusEnum, ApplicationStatusEnum, EnrollmentStatusEnum
+)
 
 
-class BaseSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-
-# Auth
-class Token(BaseSchema):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseSchema):
-    email: Optional[str] = None
-
-
-# User
-class UserCreate(BaseSchema):
+# --- AUTH & USER ---
+class UserRegister(BaseModel):
     full_name: str
     email: EmailStr
     password: str
-    role: Optional[UserRole] = UserRole.student
-    user_status: Optional[UserSubscriptionStatus] = UserSubscriptionStatus.free
+    role: RoleEnum = RoleEnum.student
+    user_status: UserStatusEnum = UserStatusEnum.free
+    is_active: bool = True
 
 
-class UserResponse(BaseSchema):
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserOut(BaseModel):
     id: int
     full_name: str
     email: EmailStr
-    role: UserRole
-    user_status: UserSubscriptionStatus
+    role: RoleEnum
+    user_status: UserStatusEnum
+    is_active: bool
     created_at: datetime
-    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
-# Category
-class CategoryBase(BaseSchema):
+# --- CATEGORY ---
+class CategoryCreate(BaseModel):
     category_name: str
 
 
-class CategoryCreate(CategoryBase):
-    pass
-
-
-class CategoryResponse(CategoryBase):
+class CategoryOut(CategoryCreate):
     id: int
 
+    class Config:
+        from_attributes = True
 
-# Course
-class CourseBase(BaseSchema):
+
+# --- COURSE ---
+class CourseCreate(BaseModel):
     title: str
-    description: str
-    category_id: int
-    level: Optional[CourseLevel] = CourseLevel.beginner
-    price: Optional[float] = 0.0
-    duration_weeks: int
-    is_active: Optional[bool] = True
-    status: Optional[CourseStatus] = CourseStatus.free
-
-
-class CourseCreate(CourseBase):
-    pass
-
-
-class CourseUpdate(BaseSchema):
-    title: Optional[str] = None
+    category: int
     description: Optional[str] = None
-    category_id: Optional[int] = None
-    level: Optional[CourseLevel] = None
+    level: CourseLevelEnum = CourseLevelEnum.beginner
+    price: float = 0.0
+    duration_weeks: int
+    is_active: bool = True
+    status: CourseStatusEnum = CourseStatusEnum.free
+
+
+class CourseUpdate(BaseModel):
+    title: Optional[str] = None
+    category: Optional[int] = None
+    description: Optional[str] = None
+    level: Optional[CourseLevelEnum] = None
     price: Optional[float] = None
     duration_weeks: Optional[int] = None
     is_active: Optional[bool] = None
-    status: Optional[CourseStatus] = None
+    status: Optional[CourseStatusEnum] = None
 
 
-class CourseResponse(CourseBase):
+class CourseOut(CourseCreate):
     id: int
     created_at: datetime
     updated_at: datetime
 
+    class Config:
+        from_attributes = True
 
-# Study Group
-class StudyGroupBase(BaseSchema):
+
+# --- APPLICATION ---
+class ApplicationCreate(BaseModel):
+    course_id: int
+    comment: Optional[str] = None
+
+
+class ApplicationUpdateManager(BaseModel):
+    status: Optional[ApplicationStatusEnum] = None
+    comment: Optional[str] = None
+
+
+class ApplicationOut(BaseModel):
+    id: int
+    student_id: int
+    course_id: int
+    manager_id: Optional[int]
+    comment: Optional[str]
+    status: ApplicationStatusEnum
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# --- STUDY GROUP & ENROLLMENT ---
+class StudyGroupCreate(BaseModel):
     name: str
     course_id: int
     teacher_id: int
+    capacity: int = 20
     starts_on: date
-    ends_on: Optional[date] = None
-    status: Optional[StudyGroupStatus] = StudyGroupStatus.recruiting
+    ends_on: date
+    status: StudyGroupStatusEnum = StudyGroupStatusEnum.recruiting
 
 
-class StudyGroupCreate(StudyGroupBase):
-    pass
-
-
-class StudyGroupUpdate(BaseSchema):
-    name: Optional[str] = None
-    starts_on: Optional[date] = None
-    ends_on: Optional[date] = None
-    status: Optional[StudyGroupStatus] = None
-
-
-class StudyGroupResponse(StudyGroupBase):
+class StudyGroupOut(StudyGroupCreate):
     id: int
     created_at: datetime
-    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
-# Application
-class ApplicationCreate(BaseSchema):
-    course_id: int
-    comment: Optional[str] = None
-
-
-class ApplicationStatusUpdate(BaseSchema):
-    status: ApplicationStatus
-
-
-class ApplicationResponse(BaseSchema):
-    id: int
-    student_id: int
-    course_id: int
-    manager_id: Optional[int] = None
-    comment: Optional[str] = None
-    status: ApplicationStatus
-    created_at: datetime
-    updated_at: datetime
-
-
-# Enrollment
-class EnrollmentCreate(BaseSchema):
-    student_id: int
+class EnrollmentCreate(BaseModel):
     group_id: int
-    status: Optional[EnrollmentStatus] = EnrollmentStatus.active
 
 
-class EnrollmentResponse(BaseSchema):
+class EnrollmentOut(BaseModel):
     id: int
     student_id: int
     group_id: int
-    status: EnrollmentStatus
+    status: EnrollmentStatusEnum
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# --- AI AGENT & SEARCH ---
+class SearchQuery(BaseModel):
+    question: str
+
+
+class AgentChatRequest(BaseModel):
+    message: str
+
+
+class AgentChatResponse(BaseModel):
+    answer: Any
