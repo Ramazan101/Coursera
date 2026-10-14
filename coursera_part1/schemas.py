@@ -7,7 +7,6 @@ from .models import (
 )
 
 
-# --- AUTH & USER ---
 class UserRegister(BaseModel):
     full_name: str
     email: EmailStr
