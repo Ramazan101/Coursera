@@ -27,9 +27,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Coursera Platform & AI Agent")
 
 
-# ==========================================
 # 1. AUTH (/auth/register/, /auth/login/)
-# ==========================================
 @app.post("/auth/register/")
 def register(user_in: UserRegister, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == user_in.email).first()
@@ -60,9 +58,7 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
     return {"access_token": token, "token_type": "bearer"}
 
 
-# ==========================================
 # 2. CATEGORY CRUD (ТОЛЬКО ADMIN)
-# ==========================================
 @app.post("/categories/", response_model=CategoryOut)
 def create_category(
     cat_in: CategoryCreate,
@@ -114,9 +110,7 @@ def delete_category(
     return {"message": "Категория удалена"}
 
 
-# ==========================================
 # 3. COURSE CRUD (ТОЛЬКО TEACHER)
-# ==========================================
 @app.post("/courses/", response_model=CourseOut)
 def create_course(
     course_in: CourseCreate,
@@ -166,9 +160,7 @@ def delete_course(
     return {"message": "Курс удален"}
 
 
-# ==========================================
 # 4. APPLICATION (Student Create / Manager CRUD)
-# ==========================================
 @app.post("/applications/", response_model=ApplicationOut)
 def create_application(
     app_in: ApplicationCreate,
@@ -179,7 +171,6 @@ def create_application(
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
 
-    # Проверка: student.is_active == True ИЛИ (student.is_active == False и course.status == free)
     if not student.is_active and course.status != CourseStatusEnum.free:
         raise HTTPException(
             status_code=403,
@@ -250,9 +241,7 @@ def delete_application(
     return {"message": "Заявка удалена"}
 
 
-# ==========================================
 # 5. STUDY GROUP & ENROLLMENT (Student)
-# ==========================================
 @app.post("/study-groups/join/", response_model=EnrollmentOut)
 def join_study_group(
     enroll_in: EnrollmentCreate,
@@ -287,25 +276,20 @@ def get_my_enrollments(
     db: Session = Depends(get_db),
     student: User = Depends(require_roles([RoleEnum.student]))
 ):
-    # Аналог get_queryset для студента: видит только свои зачисления
     return db.query(Enrollment).filter(Enrollment.student_id == student.id).all()
 
 
-# ==========================================
 # 6. ПОИСК КУРСОВ (/search/)
-# ==========================================
 @app.post("/search/", response_model=List[CourseOut])
 def search_courses(query: SearchQuery, db: Session = Depends(get_db)):
     q_text = query.question.lower()
     courses_q = db.query(Course).filter(Course.is_active == True)
 
-    # Извлекаем ограничение по неделям, например: "до 4 недель"
     weeks_match = re.search(r"до\s*(\d+)\s*недел", q_text)
     if weeks_match:
         max_weeks = int(weeks_match.group(1))
         courses_q = courses_q.filter(Course.duration_weeks <= max_weeks)
 
-    # Извлекаем ключевые слова (например, python, java, дизайн и т.д.)
     stop_words = {"найди", "мне", "курс", "курсы", "по", "продолжительность", "до", "недель", "недели"}
     words = [w for w in re.findall(r"[a-zа-яё0-9]+", q_text) if w not in stop_words and not w.isdigit()]
 
@@ -319,9 +303,7 @@ def search_courses(query: SearchQuery, db: Session = Depends(get_db)):
     return results
 
 
-# ==========================================
 # 7. AI AGENT (/agent/chat/)
-# ==========================================
 @app.post("/agent/chat/", response_model=AgentChatResponse)
 def agent_chat(
     req: AgentChatRequest,
@@ -376,8 +358,7 @@ def agent_chat(
     }
 
 
-# --- ИНСТРУМЕНТЫ (TOOLS) ДЛЯ ДОП ДЗ ---
-
+# tools
 def tool_get_my_profile(current_user: User) -> dict:
     """Чтение профиля текущего пользователя."""
     return {
