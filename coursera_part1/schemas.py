@@ -137,7 +137,7 @@ class EnrollmentOut(BaseModel):
         from_attributes = True
 
 
-# --- AI AGENT & SEARCH ---
+
 class SearchQuery(BaseModel):
     question: str
 
